@@ -87,6 +87,7 @@ Science 6 February 2009: Vol. 323 no. 5915 pp. 741-746 DOI: 10.1126/science.1159
     - Learning curve
     - Customization
     - Learning curve
+    - ![LearningCurve](learningCurve.png){width=40%}
 
 - **Reproducible Research**
 
