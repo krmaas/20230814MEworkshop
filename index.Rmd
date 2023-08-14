@@ -28,8 +28,8 @@ In class discussions and commands will be posted in an etherpad <https://etherpa
 Day|Session|Topic
 ------|-------|--------
 Day 1|Morning|[Introduction to communities](https://krmaas.github.io/20230814MEworkshop/intro.communities.html)
-.|.|Overview of wetlab 
-.|.|Potential wetlab errors
+.|.|[Overview of wetlab](https://krmaas.github.io/20230814MEworkshop/introWetLab.html) 
+.|.|[Potential wetlab errors](https://krmaas.github.io/20230814MEworkshop/wetLabErrors.html)
 .|Afternoon| Introduction to Basespace and Command Line 
 .|.|Begin mothur processing
 .|.|Sequencing quality control
