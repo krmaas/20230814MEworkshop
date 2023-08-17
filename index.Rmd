@@ -19,9 +19,20 @@ In class discussions and commands will be posted in an etherpad <https://etherpa
 
 [Kendra's mothur batch](https://github.com/krmaas/bioinformatics/blob/master/mothur.batch)
 
+[Kendra's mothur cheatsheet](https://krmaas.github.io/20230814MEworkshop/mothur.cheatsheet.html)
+
+[How to make Krona plot](https://github.com/accaldwell/mothur_krona)
+
+[bioblitz environmental data](https://krmaas.github.io/20230814MEworkshop/may18ws.env.txt)
+
+[bioblitz sample names](https://krmaas.github.io/20230814MEworkshop/may18ws.sample.txt)
+
+[Read mothur files into R]()
+
 [Kendra's R script](https://github.com/krmaas/20191217MARSme/blob/master/initialDataAnalysis.R)
 
 [stacked bar graph script](https://github.com/krmaas/20191217MARSme/blob/master/stackBar.R)
+
 
 
 
@@ -41,6 +52,7 @@ Day 2|Morning|Continue mothur processing
 Day 3|Morning|Reproducible Research
 .|.|Introduction to R ggplot
 .|Afternoon|Importing data into R
+.|.|[Import mothur into R](https://krmaas.github.io/20230814MEworkshop/importMothur.R)
 .|.|Subsetting, joining, data management
 Day 4|Morning|Ecological statistics
 .|Afternoon|Hypothesis testing &Indicator Species Analysis

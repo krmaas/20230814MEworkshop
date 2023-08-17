@@ -5,11 +5,27 @@
 # install.packages("ggplot2")
 # install.packages("dplyr")
 # install.packages("tidyverse")
+# install.packages("vegan")
 
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
+library(vegan)
 
+parseDistanceDF = function(phylip_file) {
+    
+    # Read the first line of the phylip file to find out how many sequences/samples it contains
+    temp_connection = file(phylip_file, 'r')
+    len = readLines(temp_connection, n=1)
+    len = as.numeric(len)
+    len = len +1
+    close(temp_connection)
+    
+    
+    phylip_data = read.table(phylip_file, fill=T, row.names=1, skip=1, col.names=1:len)
+    colnames(phylip_data) <- row.names(phylip_data)
+    return(phylip_data)
+}
 
 ### read in data
 
@@ -35,6 +51,13 @@ expdata <- left_join(expdata, samples, by="Sample")
 alpha.expdata <- left_join(alpha, expdata, by="group")
 expdata.alpha <- left_join(expdata, alpha, by="group")
 
+## reorder factors so they display water, sed, soil
+alpha.expdata$Type <- factor(alpha.expdata$Type, levels = c("water", "sed", "soil"))
+
+## read in beta diversity
+jc <- parseDistanceDF("../ws23.trim.contigs.good.unique.good.filter.precluster.denovo.vsearch.pick.opti_mcc.jest.0.03.lt.ave.dist")
+bc <- parseDistanceDF("../ws23.trim.contigs.good.unique.good.filter.precluster.denovo.vsearch.pick.opti_mcc.braycurtis.0.03.lt.ave.dist")
+tyc <- parseDistanceDF("../ws23.trim.contigs.good.unique.good.filter.precluster.denovo.vsearch.pick.opti_mcc.thetayc.0.03.lt.ave.dist")
 
 # search help
 ?read.table
@@ -79,10 +102,69 @@ ggplot(data=alpha.expdata, mapping=aes(x=Type, y=invsimpson))+
     ggtitle("Bacterial diversity by Sample Type")+
     theme_bw()
 
+## run Anova to test for sig differences
+
+res.aov <- aov(invsimpson~Type, data=alpha.expdata)
+summary(res.aov)
+TukeyHSD(res.aov)    
+    
+    
+### Beta diversity
+
+## jc=Jaccard presence absence
+
+jc.nms <- metaMDS(as.dist(jc), k=2, try=50, trymax=500, wascores=F)
+
+# use ordiplot for 3D ordinations
+ordiplot(jc.nms, choices=c(1,2), type="points")
+
+## plot ordination with ggplot
+
+jc.points <- data.frame(jc.nms$points)
+
+jc.plot <- ggplot(jc.points, aes(x=MDS1, y=MDS2, label=rownames(jc)))
+
+x <- max(jc.points$MDS1)/1.5
+y <- max(jc.points$MDS2)
 
 
+jc.plot +
+    geom_point(aes(color = factor(alpha.expdata$Type)))+
+    annotate("text", x, y, label=paste("stress = ", round(jc.nms$stress, digits = 3)))
     
-    
-    
-    
+## bc = Bray Curtis
+
+bc.nms <- metaMDS(as.dist(bc), k=2, try=50, trymax=500, wascores=F)
+#
+## plot ordination with ggplot
+
+bc.points <- data.frame(bc.nms$points)
+
+bc.plot <- ggplot(bc.points, aes(x=MDS1, y=MDS2, label=rownames(bc)))
+
+x <- max(bc.points$MDS1)/1.5
+y <- max(bc.points$MDS2)
+
+
+bc.plot +
+    geom_point(aes(color = factor(alpha.expdata$Type)))+
+    annotate("text", x, y, label=paste("stress = ", round(bc.nms$stress, digits = 3)))
+
+## tyc = Theta YC
+
+tyc.nms <- metaMDS(as.dist(tyc), k=2, try=50, trymax=500, wascores=F)
+
+## plot ordination with ggplot
+
+tyc.points <- data.frame(tyc.nms$points)
+
+tyc.plot <- ggplot(tyc.points, aes(x=MDS1, y=MDS2, label=rownames(tyc)))
+
+x <- max(tyc.points$MDS1)/1.5
+y <- max(tyc.points$MDS2)
+
+
+tyc.plot +
+    geom_point(aes(color = factor(alpha.expdata$Type)))+
+    annotate("text", x, y, label=paste("stress = ", round(tyc.nms$stress, digits = 3)))
 
