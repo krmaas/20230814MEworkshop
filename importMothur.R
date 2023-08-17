@@ -6,11 +6,13 @@
 # install.packages("dplyr")
 # install.packages("tidyverse")
 # install.packages("vegan")
+# install.packages("indicspecies")
 
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(vegan)
+library(indicspecies)
 
 parseDistanceDF = function(phylip_file) {
     
@@ -40,6 +42,12 @@ str(alpha)
 
 alpha <- filter(alpha,method == "ave")
 # alpha <- filter(alpha, method != "std")
+
+t
+taxa <- read.table(textConnection(gsub("\\(.+?\\);", "\t", 
+    readLines("../ws23.trim.contigs.good.unique.good.filter.precluster.denovo.vsearch.pick.opti_mcc.0.03.cons.taxonomy"))), 
+    col.names=c("OTU", "Size", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"), skip=1)
+taxa <- taxa[taxa$OTU %in% names(otu),]
 
 # read in environmental data, sample name linker
 expdata <- read.table(file= "../may18ws.env.txt", header=T, stringsAsFactors = TRUE)
@@ -82,6 +90,12 @@ str(n1)
 otu.ab <- otu[,-which(names(otu) %in% n1)]
 
 
+type.col <- c(
+    "water" = "#66c2a5",
+    "sed" = "#8da0cb",
+    "soil" = "#fc8d62"
+)
+
 ### Alpha diversity!
 
 ggplot(data=alpha.expdata, mapping=aes(x=Type, y=sobs))+
@@ -120,6 +134,9 @@ ordiplot(jc.nms, choices=c(1,2), type="points")
 
 ## plot ordination with ggplot
 
+##### Challenge Improve Ordination plots, pick better colors, 
+  #make points bigger/different shape, add plot title, fix legend title
+
 jc.points <- data.frame(jc.nms$points)
 
 jc.plot <- ggplot(jc.points, aes(x=MDS1, y=MDS2, label=rownames(jc)))
@@ -129,7 +146,11 @@ y <- max(jc.points$MDS2)
 
 
 jc.plot +
-    geom_point(aes(color = factor(alpha.expdata$Type)))+
+    geom_point(aes(fill = factor(alpha.expdata$Type)), size = 3, shape = 23)+
+    # scale_shape_manual(values = 23)+ # doesn't work because we're not mapping shape
+    scale_fill_manual(values= type.col)+
+    ggtitle("Jaccard")+
+    labs(fill = "Sample Type")+
     annotate("text", x, y, label=paste("stress = ", round(jc.nms$stress, digits = 3)))
     
 ## bc = Bray Curtis
@@ -142,12 +163,17 @@ bc.points <- data.frame(bc.nms$points)
 
 bc.plot <- ggplot(bc.points, aes(x=MDS1, y=MDS2, label=rownames(bc)))
 
-x <- max(bc.points$MDS1)/1.5
-y <- max(bc.points$MDS2)
+x <- max(bc.points$MDS1)/2
+y <- min(bc.points$MDS2)
 
 
 bc.plot +
-    geom_point(aes(color = factor(alpha.expdata$Type)))+
+    geom_point(aes(fill = factor(alpha.expdata$Type)), size = 3, shape = 23)+
+    # geom_text()+ # labels each sample with row.name
+    # scale_shape_manual(values = 23)+ # doesn't work because we're not mapping shape
+    scale_fill_manual(values= type.col)+
+    ggtitle("Beta Diversity Bray Curtis")+
+    labs(fill = "Sample Type")+
     annotate("text", x, y, label=paste("stress = ", round(bc.nms$stress, digits = 3)))
 
 ## tyc = Theta YC
@@ -168,3 +194,51 @@ tyc.plot +
     geom_point(aes(color = factor(alpha.expdata$Type)))+
     annotate("text", x, y, label=paste("stress = ", round(tyc.nms$stress, digits = 3)))
 
+
+### hypothesis testing Permanova 
+
+permanova <- adonis2(as.dist(jc)~alpha.expdata$Type, perm=99, rm.na=TRUE)
+permanova
+betadisp <- betadisper(as.dist(jc), alpha.expdata$Type)
+anova(betadisp) ## p=0.56, no sig diff between dispersion of samples
+
+permanova <- adonis2(as.dist(bc)~alpha.expdata$Type, perm=99, rm.na=TRUE)
+permanova
+betadisp <- betadisper(as.dist(bc), alpha.expdata$Type)
+anova(betadisp) # no sig diff
+
+permanova <- adonis2(as.dist(tyc)~alpha.expdata$Type, perm=99, rm.na=TRUE)
+permanova
+betadisp <- betadisper(as.dist(tyc), alpha.expdata$Type)
+anova(betadisp) #no sig diff
+
+
+### Indicator Species Analysis
+
+indic <- multipatt(otu, alpha.expdata$Type, control = how(nperm=99))
+summary(indic)
+
+write.csv(file="indicator.species.csv", indic$sign %>%
+              rownames_to_column(var = "OTU") %>%
+              mutate(p.fdr = round(p.adjust(p.value, "fdr"),3)) %>%
+              right_join(taxa, by = "OTU") %>%
+              # filter(p.fdr <0.5) %>%
+              filter(p.value <0.05)%>%
+              arrange(index))
+
+
+#repeat indicator analysis on just abundant otu
+
+indic <- multipatt(otu.ab, alpha.expdata$Type, control = how(nperm=999))
+summary(indic)
+
+write.csv(file="indicator.species.999.csv", indic$sign %>%
+              rownames_to_column(var = "OTU") %>%
+              mutate(p.fdr = round(p.adjust(p.value, "fdr"),3)) %>%
+              right_join(taxa, by = "OTU") %>%
+              # filter(p.fdr <0.5) %>%
+              filter(p.value <0.05)%>%
+              arrange(index))
+
+
+## probably shouldn't use indic for microbiome. should try ALDEx2 and ANCOM-II 
